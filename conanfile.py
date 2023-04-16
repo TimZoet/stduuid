@@ -1,8 +1,7 @@
-from conans import ConanFile, CMake, tools
-from conans.errors import ConanInvalidConfiguration
-from conans.tools import Version
-import os
-
+from conan import ConanFile
+from conan.errors import ConanInvalidConfiguration
+from conan.tools.files import copy
+from conan.tools.scm import Version
 
 class StduuidConan(ConanFile):
     name = "stduuid"
@@ -18,8 +17,8 @@ class StduuidConan(ConanFile):
     _source_subfolder = ""
     
     def export_sources(self):
-        self.copy("LICENSE")
-        self.copy("include/*")
+        copy(self, "LICENSE", self.recipe_folder, self.export_sources_folder)
+        copy(self, "include/*", self.recipe_folder, self.export_sources_folder)
 
     def requirements(self):
         self.requires("ms-gsl/2.0.0")
@@ -30,9 +29,9 @@ class StduuidConan(ConanFile):
         version = Version( self.settings.compiler.version )
         compiler = self.settings.compiler
         if self.settings.compiler.cppstd and \
-           not any([str(self.settings.compiler.cppstd) == std for std in ["17", "20", "gnu17", "gnu20"]]):
-            raise ConanInvalidConfiguration("stduuid requires at least c++17")
-        elif compiler == "Visual Studio"and version < "15":
+           not any([str(self.settings.compiler.cppstd) == std for std in ["17", "20", "23", "gnu17", "gnu20"]]):
+            raise ConanInvalidConfiguration(f"stduuid requires at least c++17, current is {self.settings.compiler.cppstd}")
+        elif compiler == "msvc"and version < "15":
             raise ConanInvalidConfiguration("stduuid requires at least Visual Studio version 15")
         else:
             if ( compiler == "gcc" and version < "7" ) or ( compiler == "clang" and version < "5" ):
@@ -41,10 +40,4 @@ class StduuidConan(ConanFile):
                 raise ConanInvalidConfiguration("stduuid requires a compiler that supports at least C++17")
 
     def package(self):
-        root_dir = self._source_subfolder
-        include_dir = os.path.join(root_dir, "include")
-        self.copy(pattern="LICENSE", dst="licenses", src=root_dir)
-        self.copy(pattern="*.h", dst="include", src=include_dir)
-
-    def package_id(self):
-        self.info.header_only()
+        copy(self, "*.h", self.source_folder, self.package_folder)
